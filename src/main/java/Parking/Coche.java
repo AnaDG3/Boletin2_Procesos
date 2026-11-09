@@ -1,32 +1,55 @@
 package Parking;
 
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 class Coche implements Runnable {
-    String numeroCoche;
-    Semaphore sem, pintar;
-    int aleParking=(int)(Math.random()*100);
-    int aleCirculando=(int) (Math.random()*50);
-    public Coche(String numeroCoche, Semaphore sem)
-    {
-        this.numeroCoche=numeroCoche;
-        this.sem=sem;
+
+    String matricula;
+    Parking parking;
+
+    int aleCirculando = (int)(Math.random() * 5);
+    int aleParking = 1000 + (int)(Math.random() * 2001);
+    int aleEspera = 10 + (int)(Math.random() * 11);
+
+    public Coche(String matricula, Parking parking) {
+        this.matricula = matricula;
+        this.parking = parking;
     }
+
     @Override
     public void run() {
+
         try {
-            Thread.sleep(100+aleCirculando*100);
-            sem.acquire(); // para que solo entren los coches que caben
-            System.out.println("------------"+sem.getQueueLength()+" coches en la cola");
-            System.out.println(numeroCoche+" entra al parking");
-            System.out.println(sem.availablePermits()+" plazas libres");
-            Thread.sleep(1000+aleParking*100);
-            System.out.println(numeroCoche+" sale del parking");
-            System.out.println(sem.availablePermits()+" plazas libres");
-            System.out.println("------------"+sem.getQueueLength()+" coches en la cola");
-            sem.release();
+
+            // El coche comienza circulando hasta llegar al parking
+            System.out.println(matricula + " está circulando por la ciudad");
+
+            Thread.sleep(aleCirculando * 1000);
+
+            System.out.println(matricula + " llega al parking e intenta entrar");
+
+            // Espera para conseguir autorización
+            boolean conseguido = parking.entrarCoche(matricula, aleEspera);
+
+            if (conseguido) {
+
+                System.out.println(matricula + " está aparcado");
+
+                Thread.sleep(aleParking);
+
+                // Sale del parking
+                parking.salirCoche(matricula);
+
+            } else {
+
+                System.out.println(matricula +
+                        " abandona el parking porque no ha conseguido plaza");
+
+            }
+
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            System.out.println(matricula + " ha sido interrumpido");
         }
     }
 }

@@ -1,26 +1,28 @@
 package pasoporpuente;
 
-/**
+/*
+ * programa que controle el paso de personas por un puente,
+ * siempre en la misma dirección, para que se cumplan las
+ * siguientes restricciones.
  *
- * programa que controle el paso de personas por un puente, siempre en la misma
- * dirección, para que se cumplan las siguientes restricciones. No pueden pasar
- * más de tres personas a la vez, y no puede haber más de 200 kg de peso en
- * ningún momento. En un sistema real, se podría obtener la información de las
- * personas que llegan y de su peso mediante sensores. Para realizar la
- * simulación, se va a modelar las personas como hilos. El tiempo entre la
- * llegada de dos personas es aleatorio entre 1 y 30 segundos,
- * para pasar entre 10 y 50 segundos, y las personas tienen un peso aleatorio
- * entre 40 y 120 kg.
- *
+ * No pueden pasar más de cuatro personas a la vez,
+ * ni más de tres en cada sentido.
  */
-import java.util.Random;
 
 class Puente {  // Estado, objeto compartido entre los hilos
 
     private static final int PESO_MAXIMO = 200;
-    private static final int MAX_PERSONAS = 3;
+    private static final int MAX_PERSONAS = 4;
+    private static final int MAX_PERSONAS_SENTIDO = 3;
+
     private int peso = 0;
     private int numPersonas = 0;
+
+    // 0 = vacío, 1 = derecha, -1 = izquierda
+    private int sentidoActual = 0;
+
+    private int personasDerecha = 0;
+    private int personasIzquierda = 0;
 
     synchronized public int getPeso() {
         return peso;
@@ -30,24 +32,52 @@ class Puente {  // Estado, objeto compartido entre los hilos
         return numPersonas;
     }
 
-
     synchronized public boolean autorizacionPaso(Persona persona) {
 
         boolean result;
 
-        if (this.peso + persona.getPeso() <= Puente.PESO_MAXIMO && this.numPersonas < Puente.MAX_PERSONAS) {
+        if ((this.sentidoActual == 0 ||
+                this.sentidoActual == persona.getSentido())
+                && this.peso + persona.getPeso() <= Puente.PESO_MAXIMO
+                && this.numPersonas < Puente.MAX_PERSONAS
+                && (persona.getSentido() == 1
+                ? this.personasDerecha < Puente.MAX_PERSONAS_SENTIDO
+                : this.personasIzquierda < Puente.MAX_PERSONAS_SENTIDO)) {
+
+            this.sentidoActual = persona.getSentido();
+
             this.numPersonas++;
             this.peso += persona.getPeso();
+
+            if (persona.getSentido() == 1) {
+                this.personasDerecha++;
+            } else {
+                this.personasIzquierda++;
+            }
+
             result = true;
+
         } else {
             result = false;
         }
+
         return result;
     }
 
     synchronized public void terminaPaso(Persona persona) {
+
         this.peso -= persona.getPeso();
         this.numPersonas--;
+
+        if (persona.getSentido() == 1) {
+            this.personasDerecha--;
+        } else {
+            this.personasIzquierda--;
+        }
+
+        // Si el puente queda vacío, puede cambiar de sentido
+        if (this.numPersonas == 0) {
+            this.sentidoActual = 0;
+        }
     }
 }
-

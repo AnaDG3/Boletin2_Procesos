@@ -26,15 +26,23 @@ public class PasoPorPuente {
             int pesoPersona = minPesoPersona + r.nextInt(
                     maxPesoPersona - minPesoPersona + 1);
 
+            // Elegir sentido aleatorio
+            int sentido = r.nextBoolean() ? 1 : -1;
+
             System.out.printf("Siguiente persona llega en %d segundos.\n", tParaLlegadaPersona);
 
             try {
-                Thread.sleep(1000*tParaLlegadaPersona);
+                Thread.sleep(tParaLlegadaPersona);
             } catch (InterruptedException ex) {
                 System.out.printf("Interrumpido proceso principal");
+                Thread.currentThread().interrupt();
+                break;
             }
 
-            Thread hiloPersona = new Thread(new Persona(puente, pesoPersona, tMinPaso, tMaxPaso, "P"+idPersona));
+            Thread hiloPersona = new Thread(new Persona(
+                    puente, pesoPersona, tMinPaso, tMaxPaso,
+                    "P" + idPersona, sentido));
+
             hiloPersona.start();
 
             idPersona++;
